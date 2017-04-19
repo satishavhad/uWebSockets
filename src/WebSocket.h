@@ -2,7 +2,7 @@
 #define WEBSOCKET_UWS_H
 
 #include "WebSocketProtocol.h"
-#include "Socket.h"
+#include "uSockets.h"
 
 namespace uWS {
 
@@ -29,7 +29,7 @@ protected:
 
     static uS::Socket *onData(uS::Socket *s, char *data, size_t length);
     static void onEnd(uS::Socket *s);
-    using uS::Socket::closeSocket;
+    //using uS::Socket::closeSocket;
 
     static bool refusePayloadLength(uint64_t length, WebSocketState<isServer> *webSocketState) {
         return length > 16777216;

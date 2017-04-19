@@ -1,8 +1,8 @@
 #ifndef HTTPSOCKET_UWS_H
 #define HTTPSOCKET_UWS_H
 
-#include "Socket.h"
-#include <string>
+#include "uSockets.h"
+#include <cstring>
 // #include <experimental/string_view>
 
 namespace uWS {
@@ -182,13 +182,13 @@ struct HttpResponse {
             }
         };
 
-        httpSocket->sendTransformed<NoopTransformer>(message, length, callback, callbackData, 0);
+        //httpSocket->sendTransformed<NoopTransformer>(message, length, callback, callbackData, 0);
         hasHead = true;
     }
 
     // todo: maybe this function should have a fast path for 0 length?
     void end(const char *message = nullptr, size_t length = 0,
-             void(*callback)(void *httpResponse, void *data, bool cancelled, void *reserved) = nullptr,
+             void(*callback)(HttpResponse *httpResponse, void *data, bool cancelled, void *reserved) = nullptr,
              void *callbackData = nullptr) {
 
         struct TransformData {
@@ -213,13 +213,13 @@ struct HttpResponse {
         if (httpSocket->outstandingResponsesHead != this) {
             HttpSocket<true>::Queue::Message *messagePtr = httpSocket->allocMessage(HttpTransformer::estimate(message, length));
             messagePtr->length = HttpTransformer::transform(message, (char *) messagePtr->data, length, transformData);
-            messagePtr->callback = callback;
+            //messagePtr->callback = callback;
             messagePtr->callbackData = callbackData;
             messagePtr->nextMessage = messageQueue;
             messageQueue = messagePtr;
             hasEnded = true;
         } else {
-            httpSocket->sendTransformed<HttpTransformer>(message, length, callback, callbackData, transformData);
+            //httpSocket->sendTransformed<HttpTransformer>(message, length, callback, callbackData, transformData);
             // move head as far as possible
             HttpResponse *head = next;
             while (head) {
@@ -228,25 +228,25 @@ struct HttpResponse {
                 while (messagePtr) {
                     HttpSocket<true>::Queue::Message *nextMessage = messagePtr->nextMessage;
 
-                    bool wasTransferred;
-                    if (httpSocket->write(messagePtr, wasTransferred)) {
-                        if (!wasTransferred) {
-                            httpSocket->freeMessage(messagePtr);
-                            if (callback) {
-                                callback(this, callbackData, false, nullptr);
-                            }
-                        } else {
-                            messagePtr->callback = callback;
-                            messagePtr->callbackData = callbackData;
-                        }
-                    } else {
-                        httpSocket->freeMessage(messagePtr);
-                        if (callback) {
-                            callback(this, callbackData, true, nullptr);
-                        }
-                        goto updateHead;
-                    }
-                    messagePtr = nextMessage;
+//                    bool wasTransferred;
+//                    if (httpSocket->write(messagePtr, wasTransferred)) {
+//                        if (!wasTransferred) {
+//                            httpSocket->freeMessage(messagePtr);
+//                            if (callback) {
+//                                callback(this, callbackData, false, nullptr);
+//                            }
+//                        } else {
+//                            messagePtr->callback = callback;
+//                            messagePtr->callbackData = callbackData;
+//                        }
+//                    } else {
+//                        httpSocket->freeMessage(messagePtr);
+//                        if (callback) {
+//                            callback(this, callbackData, true, nullptr);
+//                        }
+//                        goto updateHead;
+//                    }
+//                    messagePtr = nextMessage;
                 }
                 // cannot go beyond unfinished responses
                 if (!head->hasEnded) {

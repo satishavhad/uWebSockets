@@ -16,7 +16,7 @@ enum ListenOptions {
 struct Hub;
 
 template <bool isServer>
-struct WIN32_EXPORT Group : private uS::NodeData {
+struct WIN32_EXPORT Group : private uS::Node {
 protected:
     friend struct Hub;
     friend struct WebSocket<isServer>;
@@ -41,13 +41,13 @@ protected:
 
     Hub *hub;
     int extensionOptions;
-    Timer *timer = nullptr, *httpTimer = nullptr;
+    uS::Timer *timer = nullptr, *httpTimer = nullptr;
     std::string userPingMessage;
-    std::stack<Poll *> iterators;
+    std::stack<void *> iterators;
 
     // todo: cannot be named user, collides with parent!
     void *userData = nullptr;
-    static void timerCallback(Timer *timer);
+    static void timerCallback(uS::Timer *timer);
 
     WebSocket<isServer> *webSocketHead = nullptr;
     HttpSocket<isServer> *httpSocketHead = nullptr;
@@ -59,7 +59,7 @@ protected:
     void addHttpSocket(HttpSocket<isServer> *httpSocket);
     void removeHttpSocket(HttpSocket<isServer> *httpSocket);
 
-    Group(int extensionOptions, Hub *hub, uS::NodeData *nodeData);
+    Group(int extensionOptions, Hub *hub, uS::Node *node);
     void stopListening();
 
 public:
@@ -89,27 +89,27 @@ public:
 
     // same as listen(TRANSFERS), backwards compatible API for now
     void addAsync() {
-        if (!async) {
-            NodeData::addAsync();
-        }
+//        if (!async) {
+//            NodeData::addAsync();
+//        }
     }
 
     void listen(ListenOptions listenOptions) {
-        if (listenOptions == TRANSFERS && !async) {
-            addAsync();
-        }
+//        if (listenOptions == TRANSFERS && !async) {
+//            addAsync();
+//        }
     }
 
     template <class F>
     void forEach(const F &cb) {
-        Poll *iterator = webSocketHead;
+        WebSocket<isServer> *iterator = webSocketHead;
         iterators.push(iterator);
         while (iterator) {
-            Poll *lastIterator = iterator;
+            WebSocket<isServer> *lastIterator = iterator;
             cb((WebSocket<isServer> *) iterator);
-            iterator = iterators.top();
+            iterator = (WebSocket<isServer> *) iterators.top();
             if (lastIterator == iterator) {
-                iterator = ((uS::Socket *) iterator)->next;
+                iterator = (WebSocket<isServer> *) iterator->next;
                 iterators.top() = iterator;
             }
         }
@@ -119,14 +119,14 @@ public:
     // duplicated code for now!
     template <class F>
     void forEachHttpSocket(const F &cb) {
-        Poll *iterator = httpSocketHead;
+        HttpSocket<isServer> *iterator = httpSocketHead;
         iterators.push(iterator);
         while (iterator) {
-            Poll *lastIterator = iterator;
+            HttpSocket<isServer> *lastIterator = iterator;
             cb((HttpSocket<isServer> *) iterator);
-            iterator = iterators.top();
+            iterator = (HttpSocket<isServer> *) iterators.top();
             if (lastIterator == iterator) {
-                iterator = ((uS::Socket *) iterator)->next;
+                iterator = (HttpSocket<isServer> *) iterator->next;
                 iterators.top() = iterator;
             }
         }
@@ -134,7 +134,7 @@ public:
     }
 
     static Group<isServer> *from(uS::Socket *s) {
-        return static_cast<Group<isServer> *>(s->getNodeData());
+        return static_cast<Group<isServer> *>(s->getContext());
     }
 };
 

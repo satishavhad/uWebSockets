@@ -42,7 +42,7 @@ void WebSocket<isServer>::send(const char *message, size_t length, OpCode opCode
         }
     };
 
-    sendTransformed<WebSocketTransformer>((char *) message, length, (void(*)(void *, void *, bool, void *)) callback, callbackData, transformData);
+    //sendTransformed<WebSocketTransformer>((char *) message, length, (void(*)(void *, void *, bool, void *)) callback, callbackData, transformData);
 }
 
 /*
@@ -125,32 +125,32 @@ void WebSocket<isServer>::sendPrepared(typename WebSocket<isServer>::PreparedMes
         }
     };
 
-    // candidate for fixed size pool allocator
-    int memoryLength = sizeof(Queue::Message);
-    int memoryIndex = nodeData->getMemoryBlockIndex(memoryLength);
+//    // candidate for fixed size pool allocator
+//    int memoryLength = sizeof(Queue::Message);
+//    int memoryIndex = nodeData->getMemoryBlockIndex(memoryLength);
 
-    Queue::Message *messagePtr = (Queue::Message *) nodeData->getSmallMemoryBlock(memoryIndex);
-    messagePtr->data = preparedMessage->buffer;
-    messagePtr->length = preparedMessage->length;
+//    Queue::Message *messagePtr = (Queue::Message *) nodeData->getSmallMemoryBlock(memoryIndex);
+//    messagePtr->data = preparedMessage->buffer;
+//    messagePtr->length = preparedMessage->length;
 
-    bool wasTransferred;
-    if (write(messagePtr, wasTransferred)) {
-        if (!wasTransferred) {
-            nodeData->freeSmallMemoryBlock((char *) messagePtr, memoryIndex);
-            if (callback) {
-                callback(this, preparedMessage, false, callbackData);
-            }
-        } else {
-            messagePtr->callback = callback;
-            messagePtr->callbackData = preparedMessage;
-            messagePtr->reserved = callbackData;
-        }
-    } else {
-        nodeData->freeSmallMemoryBlock((char *) messagePtr, memoryIndex);
-        if (callback) {
-            callback(this, preparedMessage, true, callbackData);
-        }
-    }
+//    bool wasTransferred;
+//    if (write(messagePtr, wasTransferred)) {
+//        if (!wasTransferred) {
+//            nodeData->freeSmallMemoryBlock((char *) messagePtr, memoryIndex);
+//            if (callback) {
+//                callback(this, preparedMessage, false, callbackData);
+//            }
+//        } else {
+//            messagePtr->callback = callback;
+//            messagePtr->callbackData = preparedMessage;
+//            messagePtr->reserved = callbackData;
+//        }
+//    } else {
+//        nodeData->freeSmallMemoryBlock((char *) messagePtr, memoryIndex);
+//        if (callback) {
+//            callback(this, preparedMessage, true, callbackData);
+//        }
+//    }
 }
 
 /*
@@ -220,20 +220,20 @@ void WebSocket<isServer>::terminate() {
  */
 template <bool isServer>
 void WebSocket<isServer>::transfer(Group<isServer> *group) {
-    Group<isServer>::from(this)->removeWebSocket(this);
-    if (group->loop == Group<isServer>::from(this)->loop) {
-        // fast path
-        this->nodeData = group;
-        Group<isServer>::from(this)->addWebSocket(this);
-        Group<isServer>::from(this)->transferHandler(this);
-    } else {
-        // slow path
-        uS::Socket::transfer((uS::NodeData *) group, [](Poll *p) {
-            WebSocket<isServer> *webSocket = (WebSocket<isServer> *) p;
-            Group<isServer>::from(webSocket)->addWebSocket(webSocket);
-            Group<isServer>::from(webSocket)->transferHandler(webSocket);
-        });
-    }
+//    Group<isServer>::from(this)->removeWebSocket(this);
+//    if (group->loop == Group<isServer>::from(this)->loop) {
+//        // fast path
+//        this->nodeData = group;
+//        Group<isServer>::from(this)->addWebSocket(this);
+//        Group<isServer>::from(this)->transferHandler(this);
+//    } else {
+//        // slow path
+//        uS::Socket::transfer((uS::NodeData *) group, [](Poll *p) {
+//            WebSocket<isServer> *webSocket = (WebSocket<isServer> *) p;
+//            Group<isServer>::from(webSocket)->addWebSocket(webSocket);
+//            Group<isServer>::from(webSocket)->transferHandler(webSocket);
+//        });
+//    }
 }
 
 /*
@@ -249,23 +249,23 @@ void WebSocket<isServer>::close(int code, const char *message, size_t length) {
 
     // startTimeout is not thread safe
 
-    static const int MAX_CLOSE_PAYLOAD = 123;
-    length = std::min<size_t>(MAX_CLOSE_PAYLOAD, length);
-    Group<isServer>::from(this)->removeWebSocket(this);
-    Group<isServer>::from(this)->disconnectionHandler(this, code, (char *) message, length);
-    setShuttingDown(true);
+//    static const int MAX_CLOSE_PAYLOAD = 123;
+//    length = std::min<size_t>(MAX_CLOSE_PAYLOAD, length);
+//    Group<isServer>::from(this)->removeWebSocket(this);
+//    Group<isServer>::from(this)->disconnectionHandler(this, code, (char *) message, length);
+//    setShuttingDown(true);
 
-    // todo: using the shared timer in the group, we can skip creating a new timer per socket
-    // only this line and the one in Hub::connect uses the timeout feature
-    startTimeout<WebSocket<isServer>::onEnd>();
+//    // todo: using the shared timer in the group, we can skip creating a new timer per socket
+//    // only this line and the one in Hub::connect uses the timeout feature
+//    startTimeout<WebSocket<isServer>::onEnd>();
 
-    char closePayload[MAX_CLOSE_PAYLOAD + 2];
-    int closePayloadLength = WebSocketProtocol<isServer, WebSocket<isServer>>::formatClosePayload(closePayload, code, message, length);
-    send(closePayload, closePayloadLength, OpCode::CLOSE, [](WebSocket<isServer> *p, void *data, bool cancelled, void *reserved) {
-        if (!cancelled) {
-            p->shutdown();
-        }
-    });
+//    char closePayload[MAX_CLOSE_PAYLOAD + 2];
+//    int closePayloadLength = WebSocketProtocol<isServer, WebSocket<isServer>>::formatClosePayload(closePayload, code, message, length);
+//    send(closePayload, closePayloadLength, OpCode::CLOSE, [](WebSocket<isServer> *p, void *data, bool cancelled, void *reserved) {
+//        if (!cancelled) {
+//            p->shutdown();
+//        }
+//    });
 }
 
 template <bool isServer>
@@ -276,10 +276,10 @@ void WebSocket<isServer>::onEnd(uS::Socket *s) {
         Group<isServer>::from(webSocket)->removeWebSocket(webSocket);
         Group<isServer>::from(webSocket)->disconnectionHandler(webSocket, 1006, nullptr, 0);
     } else {
-        webSocket->cancelTimeout();
+        //webSocket->cancelTimeout();
     }
 
-    webSocket->template closeSocket<WebSocket<isServer>>();
+    //webSocket->template closeSocket<WebSocket<isServer>>();
 
     while (!webSocket->messageQueue.empty()) {
         Queue::Message *message = webSocket->messageQueue.front();
@@ -289,7 +289,7 @@ void WebSocket<isServer>::onEnd(uS::Socket *s) {
         webSocket->messageQueue.pop();
     }
 
-    webSocket->nodeData->clearPendingPollChanges(webSocket);
+    //webSocket->nodeData->clearPendingPollChanges(webSocket);
 }
 
 template <bool isServer>
@@ -300,7 +300,7 @@ bool WebSocket<isServer>::handleFragment(char *data, size_t length, unsigned int
         if (!remainingBytes && fin && !webSocket->fragmentBuffer.length()) {
             if (webSocket->compressionStatus == WebSocket<isServer>::CompressionStatus::COMPRESSED_FRAME) {
                     webSocket->compressionStatus = WebSocket<isServer>::CompressionStatus::ENABLED;
-                    Hub *hub = ((Group<isServer> *) webSocket->nodeData)->hub;
+                    Hub *hub = Group<isServer>::from(webSocket)->hub;
                     data = hub->inflate(data, length);
                     if (!data) {
                         forceClose(webSocketState);
@@ -313,7 +313,7 @@ bool WebSocket<isServer>::handleFragment(char *data, size_t length, unsigned int
                 return true;
             }
 
-            ((Group<isServer> *) webSocket->nodeData)->messageHandler(webSocket, data, length, (OpCode) opCode);
+            Group<isServer>::from(webSocket)->messageHandler(webSocket, data, length, (OpCode) opCode);
             if (webSocket->isClosed() || webSocket->isShuttingDown()) {
                 return true;
             }
@@ -323,7 +323,7 @@ bool WebSocket<isServer>::handleFragment(char *data, size_t length, unsigned int
                 length = webSocket->fragmentBuffer.length();
                 if (webSocket->compressionStatus == WebSocket<isServer>::CompressionStatus::COMPRESSED_FRAME) {
                         webSocket->compressionStatus = WebSocket<isServer>::CompressionStatus::ENABLED;
-                        Hub *hub = ((Group<isServer> *) webSocket->nodeData)->hub;
+                        Hub *hub = Group<isServer>::from(webSocket)->hub;
                         webSocket->fragmentBuffer.append("....");
                         data = hub->inflate((char *) webSocket->fragmentBuffer.data(), length);
                         if (!data) {
@@ -339,7 +339,7 @@ bool WebSocket<isServer>::handleFragment(char *data, size_t length, unsigned int
                     return true;
                 }
 
-                ((Group<isServer> *) webSocket->nodeData)->messageHandler(webSocket, data, length, (OpCode) opCode);
+                Group<isServer>::from(webSocket)->messageHandler(webSocket, data, length, (OpCode) opCode);
                 if (webSocket->isClosed() || webSocket->isShuttingDown()) {
                     return true;
                 }
@@ -355,12 +355,12 @@ bool WebSocket<isServer>::handleFragment(char *data, size_t length, unsigned int
             } else {
                 if (opCode == PING) {
                     webSocket->send(data, length, (OpCode) OpCode::PONG);
-                    ((Group<isServer> *) webSocket->nodeData)->pingHandler(webSocket, data, length);
+                    Group<isServer>::from(webSocket)->pingHandler(webSocket, data, length);
                     if (webSocket->isClosed() || webSocket->isShuttingDown()) {
                         return true;
                     }
                 } else if (opCode == PONG) {
-                    ((Group<isServer> *) webSocket->nodeData)->pongHandler(webSocket, data, length);
+                    Group<isServer>::from(webSocket)->pongHandler(webSocket, data, length);
                     if (webSocket->isClosed() || webSocket->isShuttingDown()) {
                         return true;
                     }
@@ -379,12 +379,12 @@ bool WebSocket<isServer>::handleFragment(char *data, size_t length, unsigned int
                 } else {
                     if (opCode == PING) {
                         webSocket->send(controlBuffer, webSocket->controlTipLength, (OpCode) OpCode::PONG);
-                        ((Group<isServer> *) webSocket->nodeData)->pingHandler(webSocket, controlBuffer, webSocket->controlTipLength);
+                        Group<isServer>::from(webSocket)->pingHandler(webSocket, controlBuffer, webSocket->controlTipLength);
                         if (webSocket->isClosed() || webSocket->isShuttingDown()) {
                             return true;
                         }
                     } else if (opCode == PONG) {
-                        ((Group<isServer> *) webSocket->nodeData)->pongHandler(webSocket, controlBuffer, webSocket->controlTipLength);
+                        Group<isServer>::from(webSocket)->pongHandler(webSocket, controlBuffer, webSocket->controlTipLength);
                         if (webSocket->isClosed() || webSocket->isShuttingDown()) {
                             return true;
                         }

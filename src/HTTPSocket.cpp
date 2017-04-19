@@ -1,6 +1,7 @@
 #include "HTTPSocket.h"
 #include "Group.h"
 #include "Extensions.h"
+#include <openssl/sha.h>
 #include <cstdio>
 
 #define MAX_HEADERS 100
@@ -110,8 +111,8 @@ uS::Socket *HttpSocket<isServer>::onData(uS::Socket *s, char *data, size_t lengt
 
                             // Warning: changes socket, needs to inform the stack of Poll address change!
                             WebSocket<isServer> *webSocket = new WebSocket<isServer>(perMessageDeflate, httpSocket);
-                            webSocket->template setState<WebSocket<isServer>>();
-                            webSocket->change(webSocket->nodeData->loop, webSocket, webSocket->setPoll(UV_READABLE));
+//                            webSocket->template setState<WebSocket<isServer>>();
+//                            webSocket->change(webSocket->nodeData->loop, webSocket, webSocket->setPoll(UV_READABLE));
                             Group<isServer>::from(webSocket)->addWebSocket(webSocket);
 
                             webSocket->cork(true);
@@ -160,10 +161,10 @@ uS::Socket *HttpSocket<isServer>::onData(uS::Socket *s, char *data, size_t lengt
 
                     // Warning: changes socket, needs to inform the stack of Poll address change!
                     WebSocket<isServer> *webSocket = new WebSocket<isServer>(false, httpSocket);
-                    httpSocket->cancelTimeout();
+//                    httpSocket->cancelTimeout();
                     webSocket->setUserData(httpSocket->httpUser);
-                    webSocket->template setState<WebSocket<isServer>>();
-                    webSocket->change(webSocket->nodeData->loop, webSocket, webSocket->setPoll(UV_READABLE));
+//                    webSocket->template setState<WebSocket<isServer>>();
+//                    webSocket->change(webSocket->nodeData->loop, webSocket, webSocket->setPoll(UV_READABLE));
                     Group<isServer>::from(webSocket)->addWebSocket(webSocket);
 
                     webSocket->cork(true);
@@ -250,16 +251,16 @@ void HttpSocket<isServer>::upgrade(const char *secKey, const char *extensions, s
         httpBuffer.clear();
     }
 
-    bool wasTransferred;
-    if (write(messagePtr, wasTransferred)) {
-        if (!wasTransferred) {
-            freeMessage(messagePtr);
-        } else {
-            messagePtr->callback = nullptr;
-        }
-    } else {
-        freeMessage(messagePtr);
-    }
+//    bool wasTransferred;
+//    if (write(messagePtr, wasTransferred)) {
+//        if (!wasTransferred) {
+//            freeMessage(messagePtr);
+//        } else {
+//            messagePtr->callback = nullptr;
+//        }
+//    } else {
+//        freeMessage(messagePtr);
+//    }
 }
 
 template <bool isServer>
@@ -272,10 +273,10 @@ void HttpSocket<isServer>::onEnd(uS::Socket *s) {
             Group<isServer>::from(httpSocket)->httpDisconnectionHandler(httpSocket);
         }
     } else {
-        httpSocket->cancelTimeout();
+        //httpSocket->cancelTimeout();
     }
 
-    httpSocket->template closeSocket<HttpSocket<isServer>>();
+    //httpSocket->template closeSocket<HttpSocket<isServer>>();
 
     while (!httpSocket->messageQueue.empty()) {
         Queue::Message *message = httpSocket->messageQueue.front();
@@ -296,10 +297,10 @@ void HttpSocket<isServer>::onEnd(uS::Socket *s) {
         delete httpSocket->preAllocatedResponse;
     }
 
-    httpSocket->nodeData->clearPendingPollChanges(httpSocket);
+    //httpSocket->nodeData->clearPendingPollChanges(httpSocket);
 
     if (!isServer) {
-        httpSocket->cancelTimeout();
+        //httpSocket->cancelTimeout();
         Group<CLIENT>::from(httpSocket)->errorHandler(httpSocket->httpUser);
     }
 }
