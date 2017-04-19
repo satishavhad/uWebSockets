@@ -183,7 +183,7 @@ struct HttpResponse {
             }
         };
 
-        //httpSocket->sendTransformed<NoopTransformer>(message, length, callback, callbackData, 0);
+        httpSocket->sendTransformed<NoopTransformer>(message, length, callback, callbackData, 0);
         hasHead = true;
     }
 

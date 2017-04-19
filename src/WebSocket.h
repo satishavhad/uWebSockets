@@ -80,6 +80,7 @@ public:
     friend struct Group<isServer>;
     friend struct HttpSocket<isServer>;
     friend typename uS::Socket;
+    friend typename uS::Context;
     friend class WebSocketProtocol<isServer, WebSocket<isServer>>;
 };
 

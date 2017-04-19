@@ -1013,6 +1013,10 @@ void serveHttp() {
         res->end(document.data(), document.length());
     });
 
+    h.onMessage([](uWS::WebSocket<uWS::SERVER> *ws, char *message, size_t length, uWS::OpCode opCode) {
+        ws->send(message, length, opCode);
+    });
+
     h.listen(nullptr, 3000);
     h.run();
 }

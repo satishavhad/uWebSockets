@@ -112,7 +112,7 @@ uS::Socket *HttpSocket<isServer>::onData(uS::Socket *s, char *data, size_t lengt
 
                             // Warning: changes socket, needs to inform the stack of Poll address change!
                             WebSocket<isServer> *webSocket = new WebSocket<isServer>(perMessageDeflate, httpSocket);
-//                            webSocket->template setState<WebSocket<isServer>>();
+                            webSocket->setDerivative(WEB_SOCKET_SERVER);
 //                            webSocket->change(webSocket->nodeData->loop, webSocket, webSocket->setPoll(UV_READABLE));
                             Group<isServer>::from(webSocket)->addWebSocket(webSocket);
 
@@ -252,16 +252,10 @@ void HttpSocket<isServer>::upgrade(const char *secKey, const char *extensions, s
         httpBuffer.clear();
     }
 
-//    bool wasTransferred;
-//    if (write(messagePtr, wasTransferred)) {
-//        if (!wasTransferred) {
-//            freeMessage(messagePtr);
-//        } else {
-//            messagePtr->callback = nullptr;
-//        }
-//    } else {
-//        freeMessage(messagePtr);
-//    }
+    messagePtr->callback = nullptr;
+    if (sendMessage(messagePtr, true)) {
+        freeMessage(messagePtr);
+    }
 }
 
 template <bool isServer>

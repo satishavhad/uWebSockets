@@ -42,7 +42,7 @@ void WebSocket<isServer>::send(const char *message, size_t length, OpCode opCode
         }
     };
 
-    //sendTransformed<WebSocketTransformer>((char *) message, length, (void(*)(void *, void *, bool, void *)) callback, callbackData, transformData);
+    sendTransformed<WebSocketTransformer>((char *) message, length, (void(*)(void *, void *, bool, void *)) callback, callbackData, transformData);
 }
 
 /*

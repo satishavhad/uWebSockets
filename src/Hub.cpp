@@ -42,17 +42,6 @@ char *Hub::inflate(char *data, size_t &length) {
     return inflationBuffer;
 }
 
-void Hub::onServerAccept(uS::Socket *s) {
-//    HttpSocket<SERVER> *httpSocket = new HttpSocket<SERVER>(s);
-//    delete s;
-
-//    httpSocket->setState<HttpSocket<SERVER>>();
-//    httpSocket->start(httpSocket->nodeData->loop, httpSocket, httpSocket->setPoll(UV_READABLE));
-//    httpSocket->setNoDelay(true);
-//    Group<SERVER>::from(httpSocket)->addHttpSocket(httpSocket);
-//    Group<SERVER>::from(httpSocket)->httpConnectionHandler(httpSocket);
-}
-
 void Hub::onClientConnection(uS::Socket *s, bool error) {
 //    HttpSocket<CLIENT> *httpSocket = (HttpSocket<CLIENT> *) s;
 
@@ -70,6 +59,7 @@ void Hub::onClientConnection(uS::Socket *s, bool error) {
 bool Hub::listen(const char *host, int port, uS::TLS::Context sslContext, int options, Group<SERVER> *eh) {
 
     eh->registerSocketDerivative<HttpSocket<SERVER>>(HTTP_SOCKET_SERVER);
+    eh->registerSocketDerivative<WebSocket<SERVER>>(WEB_SOCKET_SERVER);
 
     if (!eh) {
         eh = static_cast<Group<SERVER> *>(this);
@@ -85,16 +75,11 @@ bool Hub::listen(const char *host, int port, uS::TLS::Context sslContext, int op
     });
 
     if (!listening) {
-        std::cout << "Failed to listen" << std::endl;
         eh->errorHandler(port);
     }
 
     return listening;
 }
-
-/*uS::Socket *allocateHttpSocket(uS::Socket *s) {
-    return (uS::Socket *) new HttpSocket<CLIENT>(s);
-}*/
 
 void Hub::connect(std::string uri, void *user, std::map<std::string, std::string> extraHeaders, int timeoutMs, Group<CLIENT> *eh) {
     if (!eh) {
