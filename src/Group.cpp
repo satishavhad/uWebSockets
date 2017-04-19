@@ -14,7 +14,7 @@ void *Group<isServer>::getUserData() {
 }
 
 template <bool isServer>
-void Group<isServer>::timerCallback(uS::Timer *timer) {
+void Group<isServer>::timerCallback(uS::Loop::Timer *timer) {
     Group<isServer> *group = (Group<isServer> *) timer->getData();
 
     group->forEach([](uWS::WebSocket<isServer> *webSocket) {
@@ -49,17 +49,17 @@ void Group<isServer>::addHttpSocket(HttpSocket<isServer> *httpSocket) {
         httpSocket->next = nullptr;
         // start timer
         //httpTimer = new uS::Timer(hub->getLoop());
-        httpTimer->setData(this);
-        httpTimer->start([](Timer *httpTimer) {
-            Group<isServer> *group = (Group<isServer> *) httpTimer->getData();
-            group->forEachHttpSocket([](HttpSocket<isServer> *httpSocket) {
-                if (httpSocket->missedDeadline) {
-                    httpSocket->terminate();
-                } else if (!httpSocket->outstandingResponsesHead) {
-                    httpSocket->missedDeadline = true;
-                }
-            });
-        }, 1000, 1000);
+        //httpTimer->setData(this);
+//        httpTimer->start([](uS::Loop::Timer *httpTimer) {
+//            Group<isServer> *group = (Group<isServer> *) httpTimer->getData();
+//            group->forEachHttpSocket([](HttpSocket<isServer> *httpSocket) {
+//                if (httpSocket->missedDeadline) {
+//                    httpSocket->terminate();
+//                } else if (!httpSocket->outstandingResponsesHead) {
+//                    httpSocket->missedDeadline = true;
+//                }
+//            });
+//        }, 1000, 1000);
     }
     httpSocketHead = httpSocket;
     httpSocket->prev = nullptr;
@@ -72,8 +72,8 @@ void Group<isServer>::removeHttpSocket(HttpSocket<isServer> *httpSocket) {
     }
     if (httpSocket->prev == httpSocket->next) {
         httpSocketHead = nullptr;
-        httpTimer->stop();
-        httpTimer->close();
+        //httpTimer->stop();
+        //httpTimer->close();
     } else {
         if (httpSocket->prev) {
             ((HttpSocket<isServer> *) httpSocket->prev)->next = httpSocket->next;
@@ -118,7 +118,7 @@ void Group<isServer>::removeWebSocket(WebSocket<isServer> *webSocket) {
 }
 
 template <bool isServer>
-Group<isServer>::Group(int extensionOptions, Hub *hub, uS::Node *node) : hub(hub), extensionOptions(extensionOptions) {
+Group<isServer>::Group(int extensionOptions, uS::Loop *loop) : extensionOptions(extensionOptions), uS::Context(loop) {
     connectionHandler = [](WebSocket<isServer> *, HttpRequest) {};
     transferHandler = [](WebSocket<isServer> *) {};
     messageHandler = [](WebSocket<isServer> *, char *, size_t, OpCode) {};

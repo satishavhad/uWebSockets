@@ -16,7 +16,7 @@ enum ListenOptions {
 struct Hub;
 
 template <bool isServer>
-struct WIN32_EXPORT Group : private uS::Node {
+struct WIN32_EXPORT Group : private uS::Context {
 protected:
     friend struct Hub;
     friend struct WebSocket<isServer>;
@@ -41,13 +41,13 @@ protected:
 
     Hub *hub;
     int extensionOptions;
-    uS::Timer *timer = nullptr, *httpTimer = nullptr;
+    uS::Loop::Timer *timer = nullptr, *httpTimer = nullptr;
     std::string userPingMessage;
     std::stack<void *> iterators;
 
     // todo: cannot be named user, collides with parent!
     void *userData = nullptr;
-    static void timerCallback(uS::Timer *timer);
+    static void timerCallback(uS::Loop::Timer *timer);
 
     WebSocket<isServer> *webSocketHead = nullptr;
     HttpSocket<isServer> *httpSocketHead = nullptr;
@@ -59,7 +59,7 @@ protected:
     void addHttpSocket(HttpSocket<isServer> *httpSocket);
     void removeHttpSocket(HttpSocket<isServer> *httpSocket);
 
-    Group(int extensionOptions, Hub *hub, uS::Node *node);
+    Group(int extensionOptions, uS::Loop *loop);
     void stopListening();
 
 public:
@@ -94,11 +94,11 @@ public:
 //        }
     }
 
-    void listen(ListenOptions listenOptions) {
-//        if (listenOptions == TRANSFERS && !async) {
-//            addAsync();
-//        }
-    }
+//    void listen(ListenOptions listenOptions) {
+////        if (listenOptions == TRANSFERS && !async) {
+////            addAsync();
+////        }
+//    }
 
     template <class F>
     void forEach(const F &cb) {

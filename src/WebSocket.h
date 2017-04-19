@@ -79,7 +79,7 @@ public:
     friend struct Hub;
     friend struct Group<isServer>;
     friend struct HttpSocket<isServer>;
-    friend struct uS::Socket;
+    friend typename uS::Socket;
     friend class WebSocketProtocol<isServer, WebSocket<isServer>>;
 };
 

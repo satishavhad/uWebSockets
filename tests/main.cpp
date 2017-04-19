@@ -1,6 +1,6 @@
 //// NOTE: This is not part of the library, this file holds examples and tests
 
-//#include "uWS.h"
+#include "uWS.h"
 //#include <iostream>
 //#include <chrono>
 //#include <cmath>
@@ -1004,18 +1004,18 @@
 //    h.run();
 //}
 
-//void serveHttp() {
-//    uWS::Hub h;
+void serveHttp() {
+    uWS::Hub h;
 
-//    std::string document = "<h2>Well hello there, this is a basic test!</h2>";
+    std::string document = "Hello World!";//"<h2>Well hello there, this is a basic test!</h2>";
 
-//    h.onHttpRequest([&document](uWS::HttpResponse *res, uWS::HttpRequest req, char *data, size_t length, size_t remainingBytes) {
-//        res->end(document.data(), document.length());
-//    });
+    h.onHttpRequest([&document](uWS::HttpResponse *res, uWS::HttpRequest req, char *data, size_t length, size_t remainingBytes) {
+        res->end(document.data(), document.length());
+    });
 
-//    h.listen(3000);
-//    h.run();
-//}
+    h.listen(nullptr, 3000);
+    h.run();
+}
 
 //void testReceivePerformance() {
 //    // Binary "Rock it with HTML5 WebSocket"
@@ -1175,7 +1175,6 @@
 //    //testAutobahn();
 //}
 
-
 int main() {
-
+    serveHttp();
 }

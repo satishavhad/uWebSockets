@@ -116,7 +116,7 @@ struct WIN32_EXPORT HttpSocket : uS::Socket {
     size_t contentLength = 0;
     bool missedDeadline = false;
 
-    HttpSocket(uS::Socket *socket) : uS::Socket(std::move(*socket)) {}
+    HttpSocket(uS::Context *context) : uS::Socket(context) {}
 
     void terminate() {
         onEnd(this);
@@ -127,9 +127,10 @@ struct WIN32_EXPORT HttpSocket : uS::Socket {
                  size_t subprotocolLength, bool *perMessageDeflate);
 
 private:
-    friend struct uS::Socket;
+    friend typename uS::Socket;
     friend struct HttpResponse;
     friend struct Hub;
+    friend typename uS::Context;
     static uS::Socket *onData(uS::Socket *s, char *data, size_t length);
     static void onEnd(uS::Socket *s);
 };
@@ -188,7 +189,7 @@ struct HttpResponse {
 
     // todo: maybe this function should have a fast path for 0 length?
     void end(const char *message = nullptr, size_t length = 0,
-             void(*callback)(HttpResponse *httpResponse, void *data, bool cancelled, void *reserved) = nullptr,
+             void(*callback)(void *httpResponse, void *data, bool cancelled, void *reserved) = nullptr,
              void *callbackData = nullptr) {
 
         struct TransformData {
@@ -205,6 +206,11 @@ struct HttpResponse {
             static size_t transform(const char *src, char *dst, size_t length, TransformData transformData) {
                 // todo: sprintf is extremely slow
                 int offset = transformData.hasHead ? 0 : std::sprintf(dst, "HTTP/1.1 200 OK\r\nContent-Length: %u\r\n\r\n", (unsigned int) length);
+
+                // "Hello World!" test
+                //memcpy(dst, "HTTP/1.1 200 OK\r\nContent-Length: 12\r\n\r\n", 39);
+                //int offset = 39;
+
                 memcpy(dst + offset, src, length);
                 return length + offset;
             }
@@ -219,7 +225,7 @@ struct HttpResponse {
             messageQueue = messagePtr;
             hasEnded = true;
         } else {
-            //httpSocket->sendTransformed<HttpTransformer>(message, length, callback, callbackData, transformData);
+            httpSocket->sendTransformed<HttpTransformer>(message, length, callback, callbackData, transformData);
             // move head as far as possible
             HttpResponse *head = next;
             while (head) {

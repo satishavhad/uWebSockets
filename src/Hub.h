@@ -11,7 +11,7 @@
 
 namespace uWS {
 
-struct WIN32_EXPORT Hub : private uS::Node, public Group<SERVER>, public Group<CLIENT> {
+struct WIN32_EXPORT Hub : private uS::Loop, public Group<SERVER>, public Group<CLIENT> {
 protected:
     struct ConnectionData {
         std::string path;
@@ -39,7 +39,6 @@ public:
         return static_cast<Group<isServer> &>(*this);
     }
 
-    bool listen(int port, uS::TLS::Context sslContext = nullptr, int options = 0, Group<SERVER> *eh = nullptr);
     bool listen(const char *host, int port, uS::TLS::Context sslContext = nullptr, int options = 0, Group<SERVER> *eh = nullptr);
     void connect(std::string uri, void *user = nullptr, std::map<std::string, std::string> extraHeaders = {}, int timeoutMs = 5000, Group<CLIENT> *eh = nullptr);
     void upgrade(uv_os_sock_t fd, const char *secKey, SSL *ssl, const char *extensions, size_t extensionsLength, const char *subprotocol, size_t subprotocolLength, Group<SERVER> *serverGroup = nullptr);
@@ -62,12 +61,17 @@ public:
 //#endif
 //    }
 
+    Hub(int extensionOptions = 0, bool useDefaultLoop = false) : uS::Loop(true), Group<SERVER>(extensionOptions, this), Group<CLIENT>(extensionOptions, this) {
+        inflateInit2(&inflationStream, -15);
+        inflationBuffer = new char[LARGE_BUFFER_SIZE];
+    }
+
     ~Hub() {
         inflateEnd(&inflationStream);
         delete [] inflationBuffer;
     }
 
-    using uS::Node::run;
+    using uS::Loop::run;
     //using uS::Node::getLoop;
     using Group<SERVER>::onConnection;
     using Group<CLIENT>::onConnection;

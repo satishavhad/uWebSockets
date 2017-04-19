@@ -23,9 +23,9 @@ HEADERS += ../src/WebSocketProtocol.h \
     ../uSockets/Epoll.h \
     ../src/uSockets.h
 
-LIBS += -lasan -lssl -lcrypto -lz -lpthread -luv -lboost_system
+LIBS += -lssl -lcrypto -lz -lpthread -luv -lboost_system
 
-QMAKE_CXXFLAGS += -fsanitize=address -Wno-unused-parameter
+QMAKE_CXXFLAGS += -Wno-unused-parameter
 QMAKE_CXXFLAGS_RELEASE -= -O1
 QMAKE_CXXFLAGS_RELEASE -= -O2
 QMAKE_CXXFLAGS_RELEASE *= -O3 -g

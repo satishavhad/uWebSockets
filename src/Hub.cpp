@@ -68,24 +68,33 @@ void Hub::onClientConnection(uS::Socket *s, bool error) {
 }
 
 bool Hub::listen(const char *host, int port, uS::TLS::Context sslContext, int options, Group<SERVER> *eh) {
-//    if (!eh) {
-//        eh = (Group<SERVER> *) this;
-//    }
 
-//    if (uS::Node::listen<onServerAccept>(host, port, sslContext, options, (uS::NodeData *) eh, nullptr)) {
-//        eh->errorHandler(port);
-//        return false;
-//    }
-//    return true;
+    eh->registerSocketDerivative<HttpSocket<SERVER>>(HTTP_SOCKET_SERVER);
+
+    if (!eh) {
+        eh = static_cast<Group<SERVER> *>(this);
+    }
+
+    bool listening = eh->listen(host, port, options, [](Socket *socket) {
+        HttpSocket<SERVER> *httpSocket = static_cast<HttpSocket<SERVER> *>(socket);
+        httpSocket->setDerivative(HTTP_SOCKET_SERVER);
+        Group<SERVER>::from(httpSocket)->addHttpSocket(httpSocket);
+        Group<SERVER>::from(httpSocket)->httpConnectionHandler(httpSocket);
+    }, [](uS::Context *context) -> Socket * {
+        return new HttpSocket<SERVER>(context);
+    });
+
+    if (!listening) {
+        std::cout << "Failed to listen" << std::endl;
+        eh->errorHandler(port);
+    }
+
+    return listening;
 }
 
-bool Hub::listen(int port, uS::TLS::Context sslContext, int options, Group<SERVER> *eh) {
-    return listen(nullptr, port, sslContext, options, eh);
-}
-
-uS::Socket *allocateHttpSocket(uS::Socket *s) {
+/*uS::Socket *allocateHttpSocket(uS::Socket *s) {
     return (uS::Socket *) new HttpSocket<CLIENT>(s);
-}
+}*/
 
 void Hub::connect(std::string uri, void *user, std::map<std::string, std::string> extraHeaders, int timeoutMs, Group<CLIENT> *eh) {
     if (!eh) {

@@ -7,31 +7,27 @@
 typedef uS::SocketDescriptor uv_os_sock_t;
 #define WIN32_EXPORT
 
+enum {
+    HTTP_SOCKET_SERVER
+};
+
 namespace uS {
 
-    struct Socket : public uS::Berkeley<uS::Epoll>::Socket {
-        Socket *next = nullptr, *prev = nullptr;
-    };
+    // Hub is a uS::Loop
+    using Loop = Epoll;
 
-    struct Node : public uS::Berkeley<uS::Epoll> {
+    // Group is a Context and knows its Loop (Hub)
+    using Context = Berkeley<Loop>;
 
-    };
+    // Socket knows its Context / Group
+    using Socket = Context::Socket;
 
-    struct NodeData {
-
-    };
-
-    struct Timer : public uS::Epoll::Timer {
-
-    };
-
-    struct Poll : public uS::Epoll::Poll {
-
-    };
-
+    // TLS is completeley separate
     namespace TLS {
         struct Context {
-            Context(void *ctx = nullptr);
+            Context(void *ctx = nullptr) {
+
+            }
         };
 
         struct SSL;
