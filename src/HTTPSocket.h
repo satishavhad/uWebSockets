@@ -127,9 +127,9 @@ struct WIN32_EXPORT HttpSocket : uS::Socket {
                  size_t subprotocolLength, bool *perMessageDeflate);
 
 private:
-    friend typename uS::Socket;
     friend struct HttpResponse;
     friend struct Hub;
+    friend typename uS::Socket;
     friend typename uS::Context;
     static uS::Socket *onData(uS::Socket *s, char *data, size_t length);
     static void onEnd(uS::Socket *s);

@@ -25,7 +25,6 @@ protected:
     std::string dynamicInflationBuffer;
     static const int LARGE_BUFFER_SIZE = 300 * 1024;
 
-    static void onServerAccept(uS::Socket *s);
     static void onClientConnection(uS::Socket *s, bool error);
 
 public:

@@ -34,10 +34,10 @@ void Group<isServer>::timerCallback(uS::Loop::Timer *timer) {
 
 template <bool isServer>
 void Group<isServer>::startAutoPing(int intervalMs, std::string userMessage) {
-//    timer = new uS::Timer(loop);
-//    timer->setData(this);
-//    timer->start(timerCallback, intervalMs, intervalMs);
-//    userPingMessage = userMessage;
+    timer = new uS::Loop::Timer(getLoop());
+    timer->setData(this);
+    timer->start(timerCallback, intervalMs, intervalMs);
+    userPingMessage = userMessage;
 }
 
 template <bool isServer>
@@ -48,18 +48,18 @@ void Group<isServer>::addHttpSocket(HttpSocket<isServer> *httpSocket) {
     } else {
         httpSocket->next = nullptr;
         // start timer
-        //httpTimer = new uS::Timer(hub->getLoop());
-        //httpTimer->setData(this);
-//        httpTimer->start([](uS::Loop::Timer *httpTimer) {
-//            Group<isServer> *group = (Group<isServer> *) httpTimer->getData();
-//            group->forEachHttpSocket([](HttpSocket<isServer> *httpSocket) {
-//                if (httpSocket->missedDeadline) {
-//                    httpSocket->terminate();
-//                } else if (!httpSocket->outstandingResponsesHead) {
-//                    httpSocket->missedDeadline = true;
-//                }
-//            });
-//        }, 1000, 1000);
+        httpTimer = new uS::Loop::Timer(getLoop());
+        httpTimer->setData(this);
+        httpTimer->start([](uS::Loop::Timer *httpTimer) {
+            Group<isServer> *group = (Group<isServer> *) httpTimer->getData();
+            group->forEachHttpSocket([](HttpSocket<isServer> *httpSocket) {
+                if (httpSocket->missedDeadline) {
+                    httpSocket->terminate();
+                } else if (!httpSocket->outstandingResponsesHead) {
+                    httpSocket->missedDeadline = true;
+                }
+            });
+        }, 1000, 1000);
     }
     httpSocketHead = httpSocket;
     httpSocket->prev = nullptr;
@@ -72,8 +72,8 @@ void Group<isServer>::removeHttpSocket(HttpSocket<isServer> *httpSocket) {
     }
     if (httpSocket->prev == httpSocket->next) {
         httpSocketHead = nullptr;
-        //httpTimer->stop();
-        //httpTimer->close();
+        httpTimer->stop();
+        httpTimer->close();
     } else {
         if (httpSocket->prev) {
             ((HttpSocket<isServer> *) httpSocket->prev)->next = httpSocket->next;

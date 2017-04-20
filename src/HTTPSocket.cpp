@@ -113,13 +113,14 @@ uS::Socket *HttpSocket<isServer>::onData(uS::Socket *s, char *data, size_t lengt
                             // Warning: changes socket, needs to inform the stack of Poll address change!
                             WebSocket<isServer> *webSocket = new WebSocket<isServer>(perMessageDeflate, httpSocket);
                             webSocket->setDerivative(WEB_SOCKET_SERVER);
-//                            webSocket->change(webSocket->nodeData->loop, webSocket, webSocket->setPoll(UV_READABLE));
                             Group<isServer>::from(webSocket)->addWebSocket(webSocket);
 
-                            webSocket->cork(true);
+                            // httpSocket is already corked!
+                            //webSocket->cork(true);
                             Group<isServer>::from(webSocket)->connectionHandler(webSocket, req);
-                            // todo: should not uncork if closed!
-                            webSocket->cork(false);
+                            if (!webSocket->isClosed()) {
+                                webSocket->cork(false);
+                            }
                             delete httpSocket;
 
                             return webSocket;
@@ -162,18 +163,19 @@ uS::Socket *HttpSocket<isServer>::onData(uS::Socket *s, char *data, size_t lengt
 
                     // Warning: changes socket, needs to inform the stack of Poll address change!
                     WebSocket<isServer> *webSocket = new WebSocket<isServer>(false, httpSocket);
+                    webSocket->setDerivative(WEB_SOCKET_CLIENT);
 //                    httpSocket->cancelTimeout();
                     webSocket->setUserData(httpSocket->httpUser);
-//                    webSocket->template setState<WebSocket<isServer>>();
-//                    webSocket->change(webSocket->nodeData->loop, webSocket, webSocket->setPoll(UV_READABLE));
                     Group<isServer>::from(webSocket)->addWebSocket(webSocket);
 
                     webSocket->cork(true);
                     Group<isServer>::from(webSocket)->connectionHandler(webSocket, req);
-                    if (!(webSocket->isClosed() || webSocket->isShuttingDown())) {
-                        WebSocketProtocol<isServer, WebSocket<isServer>>::consume(cursor, end - cursor, webSocket);
+                    if (!webSocket->isClosed()) {
+                        if (!webSocket->isShuttingDown()) {
+                            WebSocketProtocol<isServer, WebSocket<isServer>>::consume(cursor, end - cursor, webSocket);
+                        }
+                        webSocket->cork(false);
                     }
-                    webSocket->cork(false);
                     delete httpSocket;
 
                     return webSocket;
@@ -260,7 +262,7 @@ void HttpSocket<isServer>::upgrade(const char *secKey, const char *extensions, s
 
 template <bool isServer>
 void HttpSocket<isServer>::onEnd(uS::Socket *s) {
-    HttpSocket<isServer> *httpSocket = (HttpSocket<isServer> *) s;
+    HttpSocket<isServer> *httpSocket = static_cast<HttpSocket<isServer> *>(s);
 
     if (!httpSocket->isShuttingDown()) {
         if (isServer) {

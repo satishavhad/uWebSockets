@@ -9,18 +9,15 @@ typedef uS::SocketDescriptor uv_os_sock_t;
 
 enum {
     HTTP_SOCKET_SERVER,
-    WEB_SOCKET_SERVER
+    WEB_SOCKET_SERVER,
+    HTTP_SOCKET_CLIENT,
+    WEB_SOCKET_CLIENT
 };
 
 namespace uS {
 
-    // Hub is a uS::Loop
     using Loop = Epoll;
-
-    // Group is a Context and knows its Loop (Hub)
     using Context = Berkeley<Loop>;
-
-    // Socket knows its Context / Group
     using Socket = Context::Socket;
 
     // TLS is completeley separate

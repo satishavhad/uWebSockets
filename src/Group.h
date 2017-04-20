@@ -45,7 +45,6 @@ protected:
     std::string userPingMessage;
     std::stack<void *> iterators;
 
-    // todo: cannot be named user, collides with parent!
     void *userData = nullptr;
     static void timerCallback(uS::Loop::Timer *timer);
 

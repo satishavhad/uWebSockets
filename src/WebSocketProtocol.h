@@ -1,8 +1,6 @@
 #ifndef WEBSOCKETPROTOCOL_UWS_H
 #define WEBSOCKETPROTOCOL_UWS_H
 
-// we do need to include this for htobe64, should be moved from networking!
-//#include "Networking.h"
 #include <endian.h>
 #include <arpa/inet.h>
 #include <cstdint>
