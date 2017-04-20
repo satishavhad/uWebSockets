@@ -234,6 +234,17 @@ struct HttpResponse {
                 while (messagePtr) {
                     HttpSocket<true>::Queue::Message *nextMessage = messagePtr->nextMessage;
 
+                    std::cout << "OUT OF ORDER RESPONSE IS COMMENTED OUT!" << std::endl;
+
+                    // delete this message
+                    HttpSocket<true>::freeMessage(messagePtr);
+
+//                    messagePtr->callback = callback;
+//                    messagePtr->callbackData = callbackData;
+//                    if (httpSocket->sendMessage(messagePtr, true)) {
+//                        HttpSocket<true>::freeMessage(messagePtr);
+//                    }
+
 //                    bool wasTransferred;
 //                    if (httpSocket->write(messagePtr, wasTransferred)) {
 //                        if (!wasTransferred) {
@@ -252,7 +263,7 @@ struct HttpResponse {
 //                        }
 //                        goto updateHead;
 //                    }
-//                    messagePtr = nextMessage;
+                    messagePtr = nextMessage;
                 }
                 // cannot go beyond unfinished responses
                 if (!head->hasEnded) {

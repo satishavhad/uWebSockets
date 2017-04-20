@@ -132,6 +132,8 @@ Group<isServer>::Group(int extensionOptions, uS::Loop *loop) : extensionOptions(
 template <bool isServer>
 void Group<isServer>::stopListening() {
 
+    uS::Context::stopListening();
+
     // stop context
 
 //    if (async) {

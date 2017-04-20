@@ -64,6 +64,8 @@ uS::Socket *HttpSocket<isServer>::onData(uS::Socket *s, char *data, size_t lengt
         httpSocket->missedDeadline = false;
         if (httpSocket->contentLength >= length) {
             Group<isServer>::from(httpSocket)->httpDataHandler(httpSocket->outstandingResponsesTail, data, length, httpSocket->contentLength -= length);
+            // not worth corking?
+            httpSocket->cork(false);
             return httpSocket;
         } else {
             Group<isServer>::from(httpSocket)->httpDataHandler(httpSocket->outstandingResponsesTail, data, httpSocket->contentLength, 0);
@@ -149,11 +151,14 @@ uS::Socket *HttpSocket<isServer>::onData(uS::Socket *s, char *data, size_t lengt
                             Group<SERVER>::from(httpSocket)->httpRequestHandler(res, req, nullptr, 0, 0);
                         }
 
+                        // fix this! corking should happen even if is shutting down!
                         if (httpSocket->isClosed() || httpSocket->isShuttingDown()) {
+                            // should uncokr here to release any shutdown sends
                             return httpSocket;
                         }
                     } else {
                         httpSocket->onEnd(httpSocket);
+                        httpSocket->cork(false); // added recently
                         return httpSocket;
                     }
                 }
@@ -181,6 +186,7 @@ uS::Socket *HttpSocket<isServer>::onData(uS::Socket *s, char *data, size_t lengt
                 } else {
                     httpSocket->onEnd(httpSocket);
                 }
+                httpSocket->cork(false); // added recently
                 return httpSocket;
             }
         } else {
@@ -191,6 +197,7 @@ uS::Socket *HttpSocket<isServer>::onData(uS::Socket *s, char *data, size_t lengt
                     httpSocket->httpBuffer.append(lastCursor, end - lastCursor);
                 }
             }
+            httpSocket->cork(false); // added recently
             return httpSocket;
         }
     } while(cursor != end);
