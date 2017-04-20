@@ -68,7 +68,7 @@ bool Hub::listen(const char *host, int port, uS::TLS::Context sslContext, int op
     bool listening = eh->listen(host, port, options, [](Socket *socket) {
         HttpSocket<SERVER> *httpSocket = static_cast<HttpSocket<SERVER> *>(socket);
         httpSocket->setDerivative(HTTP_SOCKET_SERVER);
-        Group<SERVER>::from(httpSocket)->addHttpSocket(httpSocket);
+        Group<SERVER>::from(httpSocket)->add(Group<SERVER>::HTTPSOCKET, httpSocket);
         Group<SERVER>::from(httpSocket)->httpConnectionHandler(httpSocket);
     }, [](uS::Context *context) -> Socket * {
         return new HttpSocket<SERVER>(context);

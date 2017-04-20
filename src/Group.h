@@ -47,16 +47,18 @@ protected:
 
     void *userData = nullptr;
     static void timerCallback(uS::Loop::Timer *timer);
+    static void limboTimerCallback(uS::Loop::Timer *timer);
 
-    WebSocket<isServer> *webSocketHead = nullptr;
-    HttpSocket<isServer> *httpSocketHead = nullptr;
-
-    void addWebSocket(WebSocket<isServer> *webSocket);
-    void removeWebSocket(WebSocket<isServer> *webSocket);
-
-    // todo: remove these, template
-    void addHttpSocket(HttpSocket<isServer> *httpSocket);
-    void removeHttpSocket(HttpSocket<isServer> *httpSocket);
+    enum {
+        WEBSOCKET,
+        HTTPSOCKET,
+        WEBSOCKET_SHUTDOWN,
+        HTTPSOCKET_CONNECT,
+        SIZE
+    };
+    Socket *chainHead[SIZE] = {};
+    void add(int chainIndex, uS::Socket *socket);
+    void remove(int chainIndex, uS::Socket *socket);
 
     Group(int extensionOptions, uS::Loop *loop);
     void stopListening();
@@ -93,39 +95,16 @@ public:
 //        }
     }
 
-//    void listen(ListenOptions listenOptions) {
-////        if (listenOptions == TRANSFERS && !async) {
-////            addAsync();
-////        }
-//    }
-
     template <class F>
-    void forEach(const F &cb) {
-        WebSocket<isServer> *iterator = webSocketHead;
+    void forEach(int chainIndex, const F &cb) {
+        uS::Socket *iterator = chainHead[chainIndex];
         iterators.push(iterator);
         while (iterator) {
-            WebSocket<isServer> *lastIterator = iterator;
-            cb((WebSocket<isServer> *) iterator);
-            iterator = (WebSocket<isServer> *) iterators.top();
+            uS::Socket *lastIterator = iterator;
+            cb(iterator);
+            iterator = static_cast<uS::Socket *>(iterators.top());
             if (lastIterator == iterator) {
-                iterator = (WebSocket<isServer> *) iterator->next;
-                iterators.top() = iterator;
-            }
-        }
-        iterators.pop();
-    }
-
-    // duplicated code for now!
-    template <class F>
-    void forEachHttpSocket(const F &cb) {
-        HttpSocket<isServer> *iterator = httpSocketHead;
-        iterators.push(iterator);
-        while (iterator) {
-            HttpSocket<isServer> *lastIterator = iterator;
-            cb((HttpSocket<isServer> *) iterator);
-            iterator = (HttpSocket<isServer> *) iterators.top();
-            if (lastIterator == iterator) {
-                iterator = (HttpSocket<isServer> *) iterator->next;
+                iterator = static_cast<uS::Socket *>(iterator->next);
                 iterators.top() = iterator;
             }
         }

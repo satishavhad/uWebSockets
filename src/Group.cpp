@@ -13,11 +13,29 @@ void *Group<isServer>::getUserData() {
     return userData;
 }
 
+// kills connect and shutdown sockets (can use userData as tracker)
+template <bool isServer>
+void Group<isServer>::limboTimerCallback(uS::Loop::Timer *timer) {
+    Group<isServer> *group = static_cast<Group<isServer> *>(timer->getData());
+
+    // for each limboSocket
+//    group->forEach([](uWS::WebSocket<isServer> *webSocket) {
+//        if (webSocket->hasOutstandingPong) {
+//            webSocket->terminate();
+//        } else {
+//            webSocket->hasOutstandingPong = true;
+//        }
+//    });
+}
+
+// this callback should be the main tick of all sockets in this group
+// including any timer in connect or shutdown state
 template <bool isServer>
 void Group<isServer>::timerCallback(uS::Loop::Timer *timer) {
-    Group<isServer> *group = (Group<isServer> *) timer->getData();
+    Group<isServer> *group = static_cast<Group<isServer> *>(timer->getData());
 
-    group->forEach([](uWS::WebSocket<isServer> *webSocket) {
+    group->forEach(Group<isServer>::WEBSOCKET, [](uS::Socket *socket) {
+        uWS::WebSocket<isServer> *webSocket = static_cast<uWS::WebSocket<isServer> *>(socket);
         if (webSocket->hasOutstandingPong) {
             webSocket->terminate();
         } else {
@@ -33,88 +51,64 @@ void Group<isServer>::timerCallback(uS::Loop::Timer *timer) {
 }
 
 template <bool isServer>
+void Group<isServer>::add(int chainIndex, uS::Socket *socket) {
+    Socket *&head = chainHead[chainIndex];
+    if (head) {
+        head->prev = socket;
+        socket->next = head;
+    } else {
+        socket->next = nullptr;
+
+        if (chainIndex == HTTPSOCKET) {
+            httpTimer = new uS::Loop::Timer(getLoop());
+            httpTimer->setData(this);
+            httpTimer->start([](uS::Loop::Timer *httpTimer) {
+                Group<isServer> *group = static_cast<Group<isServer> *>(httpTimer->getData());
+                group->forEach(Group<isServer>::HTTPSOCKET, [](uS::Socket *socket) {
+                    HttpSocket<isServer> *httpSocket = static_cast<HttpSocket<isServer> *>(socket);
+                    if (httpSocket->missedDeadline) {
+                        httpSocket->terminate();
+                    } else if (!httpSocket->outstandingResponsesHead) {
+                        httpSocket->missedDeadline = true;
+                    }
+                });
+            }, 1000, 1000);
+        }
+    }
+    head = socket;
+    socket->prev = nullptr;
+}
+
+template <bool isServer>
+void Group<isServer>::remove(int chainIndex, uS::Socket *socket) {
+    if (iterators.size()) {
+        iterators.top() = socket->next;
+    }
+    if (socket->prev == socket->next) {
+        chainHead[chainIndex] = nullptr;
+
+        if (chainIndex == HTTPSOCKET) {
+            httpTimer->stop();
+            httpTimer->close();
+        }
+    } else {
+        if (socket->prev) {
+            static_cast<uS::Socket *>(socket->prev)->next = socket->next;
+        } else {
+            chainHead[chainIndex] = socket->next;
+        }
+        if (socket->next) {
+            static_cast<uS::Socket *>(socket->next)->prev = socket->prev;
+        }
+    }
+}
+
+template <bool isServer>
 void Group<isServer>::startAutoPing(int intervalMs, std::string userMessage) {
     timer = new uS::Loop::Timer(getLoop());
     timer->setData(this);
     timer->start(timerCallback, intervalMs, intervalMs);
     userPingMessage = userMessage;
-}
-
-template <bool isServer>
-void Group<isServer>::addHttpSocket(HttpSocket<isServer> *httpSocket) {
-    if (httpSocketHead) {
-        httpSocketHead->prev = httpSocket;
-        httpSocket->next = httpSocketHead;
-    } else {
-        httpSocket->next = nullptr;
-        // start timer
-        httpTimer = new uS::Loop::Timer(getLoop());
-        httpTimer->setData(this);
-        httpTimer->start([](uS::Loop::Timer *httpTimer) {
-            Group<isServer> *group = (Group<isServer> *) httpTimer->getData();
-            group->forEachHttpSocket([](HttpSocket<isServer> *httpSocket) {
-                if (httpSocket->missedDeadline) {
-                    httpSocket->terminate();
-                } else if (!httpSocket->outstandingResponsesHead) {
-                    httpSocket->missedDeadline = true;
-                }
-            });
-        }, 1000, 1000);
-    }
-    httpSocketHead = httpSocket;
-    httpSocket->prev = nullptr;
-}
-
-template <bool isServer>
-void Group<isServer>::removeHttpSocket(HttpSocket<isServer> *httpSocket) {
-    if (iterators.size()) {
-        iterators.top() = httpSocket->next;
-    }
-    if (httpSocket->prev == httpSocket->next) {
-        httpSocketHead = nullptr;
-        httpTimer->stop();
-        httpTimer->close();
-    } else {
-        if (httpSocket->prev) {
-            ((HttpSocket<isServer> *) httpSocket->prev)->next = httpSocket->next;
-        } else {
-            httpSocketHead = (HttpSocket<isServer> *) httpSocket->next;
-        }
-        if (httpSocket->next) {
-            ((HttpSocket<isServer> *) httpSocket->next)->prev = httpSocket->prev;
-        }
-    }
-}
-
-template <bool isServer>
-void Group<isServer>::addWebSocket(WebSocket<isServer> *webSocket) {
-    if (webSocketHead) {
-        webSocketHead->prev = webSocket;
-        webSocket->next = webSocketHead;
-    } else {
-        webSocket->next = nullptr;
-    }
-    webSocketHead = webSocket;
-    webSocket->prev = nullptr;
-}
-
-template <bool isServer>
-void Group<isServer>::removeWebSocket(WebSocket<isServer> *webSocket) {
-    if (iterators.size()) {
-        iterators.top() = webSocket->next;
-    }
-    if (webSocket->prev == webSocket->next) {
-        webSocketHead = nullptr;
-    } else {
-        if (webSocket->prev) {
-            ((WebSocket<isServer> *) webSocket->prev)->next = webSocket->next;
-        } else {
-            webSocketHead = (WebSocket<isServer> *) webSocket->next;
-        }
-        if (webSocket->next) {
-            ((WebSocket<isServer> *) webSocket->next)->prev = webSocket->prev;
-        }
-    }
 }
 
 template <bool isServer>
@@ -134,24 +128,11 @@ Group<isServer>::Group(int extensionOptions, uS::Loop *loop) : extensionOptions(
     this->extensionOptions |= CLIENT_NO_CONTEXT_TAKEOVER | SERVER_NO_CONTEXT_TAKEOVER;
 }
 
+// this is really just implemented in the Context!
 template <bool isServer>
 void Group<isServer>::stopListening() {
-//    if (isServer) {
-//        if (user) {
-//            // todo: we should allow one group to listen to many ports!
-//            uS::ListenSocket *listenSocket = (uS::ListenSocket *) user;
 
-//            if (listenSocket->timer) {
-//                listenSocket->timer->stop();
-//                listenSocket->timer->close();
-//            }
-
-//            listenSocket->closeSocket<uS::ListenSocket>();
-
-//            // mark as stopped listening (extra care?)
-//            user = nullptr;
-//        }
-//    }
+    // stop context
 
 //    if (async) {
 //        async->close();
@@ -231,24 +212,24 @@ void Group<isServer>::broadcast(const char *message, size_t length, OpCode opCod
 #endif
 
     typename WebSocket<isServer>::PreparedMessage *preparedMessage = WebSocket<isServer>::prepareMessage((char *) message, length, opCode, false);
-    forEach([preparedMessage](uWS::WebSocket<isServer> *ws) {
-        ws->sendPrepared(preparedMessage);
+    forEach(WEBSOCKET, [preparedMessage](uS::Socket *socket) {
+        static_cast<uWS::WebSocket<isServer> *>(socket)->sendPrepared(preparedMessage);
     });
     WebSocket<isServer>::finalizeMessage(preparedMessage);
 }
 
 template <bool isServer>
 void Group<isServer>::terminate() {
-    forEach([](uWS::WebSocket<isServer> *ws) {
-        ws->terminate();
+    forEach(WEBSOCKET, [](uS::Socket *socket) {
+        static_cast<uWS::WebSocket<isServer> *>(socket)->terminate();
     });
     stopListening();
 }
 
 template <bool isServer>
 void Group<isServer>::close(int code, char *message, size_t length) {
-    forEach([code, message, length](uWS::WebSocket<isServer> *ws) {
-        ws->close(code, message, length);
+    forEach(WEBSOCKET, [code, message, length](uS::Socket *socket) {
+        static_cast<uWS::WebSocket<isServer> *>(socket)->close(code, message, length);
     });
     stopListening();
     if (timer) {
@@ -257,7 +238,7 @@ void Group<isServer>::close(int code, char *message, size_t length) {
     }
 }
 
-template struct Group<true>;
-template struct Group<false>;
+template struct Group<SERVER>;
+template struct Group<CLIENT>;
 
 }

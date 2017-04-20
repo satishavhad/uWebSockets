@@ -1007,7 +1007,7 @@
 void serveHttp() {
     uWS::Hub h;
 
-    std::string document = "Hello World!";//"<h2>Well hello there, this is a basic test!</h2>";
+    std::string document = "<h2>Well hello there, this is a basic test!</h2>";
 
     h.onHttpRequest([&document](uWS::HttpResponse *res, uWS::HttpRequest req, char *data, size_t length, size_t remainingBytes) {
         res->end(document.data(), document.length());
