@@ -1152,7 +1152,7 @@ void serveHttp() {
 int main(int argc, char *argv[])
 {
 //    //serveEventSource();
-//    //serveHttp();
+    serveHttp();
 //    //serveBenchmark();
 
 //#ifdef UWS_THREADSAFE

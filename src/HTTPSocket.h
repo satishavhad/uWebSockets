@@ -203,13 +203,58 @@ struct HttpResponse {
                 return length + 128;
             }
 
-            static size_t transform(const char *src, char *dst, size_t length, TransformData transformData) {
-                // todo: sprintf is extremely slow
-                int offset = transformData.hasHead ? 0 : std::sprintf(dst, "HTTP/1.1 200 OK\r\nContent-Length: %u\r\n\r\n", (unsigned int) length);
+            static unsigned int uIntToString(uint32_t val, char *dst) {
+                static const char *lut[] = {
+                    "00", "01", "02", "03", "04", "05", "06", "07", "08", "09",
+                    "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
+                    "20", "21", "22", "23", "24", "25", "26", "27", "28", "29",
+                    "30", "31", "32", "33", "34", "35", "36", "37", "38", "39",
+                    "40", "41", "42", "43", "44", "45", "46", "47", "48", "49",
+                    "50", "51", "52", "53", "54", "55", "56", "57", "58", "59",
+                    "60", "61", "62", "63", "64", "65", "66", "67", "68", "69",
+                    "70", "71", "72", "73", "74", "75", "76", "77", "78", "79",
+                    "80", "81", "82", "83", "84", "85", "86", "87", "88", "89",
+                    "90", "91", "92", "93", "94", "95", "96", "97", "98", "99"
+                };
+                static const char *lowLut = "0123456789";
+                char buf[10];
+                char *top = buf + 10;
 
-                // "Hello World!" test
-                //memcpy(dst, "HTTP/1.1 200 OK\r\nContent-Length: 12\r\n\r\n", 39);
-                //int offset = 39;
+                while (val >= 100) {
+                    memcpy(top -= 2, lut[val % 100], 2);
+                    val /= 100;
+                }
+                if (val >= 10) {
+                    memcpy(top -= 2, lut[val], 2);
+                } else {
+                    memcpy(--top, &lowLut[val], 1);
+                }
+                int length = (buf + 10) - top;
+                memcpy(dst, top, length);
+                return length;
+            }
+
+            static size_t transform(const char *src, char *dst, size_t length, TransformData transformData) {
+
+                // similar to HttpSocket::upgrade, make simpler
+                int offset;
+                if (!transformData.hasHead) {
+
+                    static const char contentLength[] = "HTTP/1.1 200 OK\r\nContent-Length: ";
+                    static const int contentLengthLength = sizeof(contentLength) - 1;
+                    memcpy(dst, contentLength, (offset = contentLengthLength));
+                    offset += uIntToString(length, dst + offset);
+
+                    static const char server[] = "\r\nServer: uWebSockets";
+                    static const int serverLength = sizeof(server) - 1;
+                    memcpy(dst + offset, server, serverLength);
+                    offset += serverLength;
+
+                    memcpy(dst + offset, "\r\n\r\n", 4);
+                    offset += 4;
+                } else {
+                    offset = 0;
+                }
 
                 memcpy(dst + offset, src, length);
                 return length + offset;
